@@ -6,11 +6,18 @@
 # Make sure you have 2 wireless interfaces
 # Based on https://github.com/mrtejas99/wifi-extender
 
+
+# Script must run as root
+if [[ $EUID -gt 0 ]]; then # we can compare directly with this syntax.
+    echo "Please run as root/sudo"
+    exit 1
+fi
+
+
+
 ##### CONFIGURATIONS TO BE CHANGED ####
 WLAN0="wlan0"
 WLAN1="wlan1"
-
-
 
 # Config files, don't change
 wp0conf="/etc/wpa_supplicant/wpa_supplicant-wlan0.conf"
@@ -21,19 +28,26 @@ wlan1_network="/etc/systemd/network/12-wlan1.network"
 
 
 interactive_configurations() {
-    # Ask the user to input the correct configurations eg. ssid
-    ORIGINAL_SSID="<your_ssid>"
-    ORIGINAL_PASS="<your_pass>" # Minimum 8 characters!!
-    NEW_SSID="<new_ssid>"
-    NEW_PASS="<new_pass>" # Minimum 8 characters!!
+    # Ask the user to input the correct configurations for ssid(s) and passwords
+    read -p 'Please enter the name (SSID) of the network you wish to connect the pi: ' ORIGINAL_SSID
+    while read -p "Please enter the password of the wifi network: " ORIGINAL_PASS && [ ${#ORIGINAL_PASS} -lt 8 ]; do
+        echo "Please enter password with more than 8 characters."
+    done
+
+    read -p 'Please enter the name (SSID) of the new network you want to create:' NEW_SSID
+    while read -p "Please enter the password of the wifi network: " NEW_PASS && [ ${#NEW_PASS} -lt 8 ]; do
+        echo "Please enter password with more than 8 characters."
+    done
 }
 
 generate_wpa2_psk() {
     wpa_passphrase $1 $2 |grep -E 'psk' | grep -v "#psk" | cut -d '=' -f 2
 }
 
-
 validate_configurations() {
+    echo
+    echo
+    echo
     echo "Current configurations: "
     echo
     echo "WLAN0: $WLAN0"
@@ -51,7 +65,6 @@ validate_configurations() {
             * ) echo "Please answer yes or no.";;
         esac
     done
-
 }
 
 
@@ -169,15 +182,7 @@ uninstall() {
 
 
 
-
-
 # Starting point
-
-if [[ $EUID -gt 0 ]]; then # we can compare directly with this syntax.
-    echo "Please run as root/sudo"
-    exit 1
-fi
-
 echo "Welcome!"
 echo "This script will turn your Raspberry pi into wifi extender! (repeater)"
 echo "Please choose your plan"
